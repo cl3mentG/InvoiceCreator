@@ -20,17 +20,15 @@ A simple yet powerful pdf invoice creator.
 
 ## Usage
 
-- Run `main.py` and changes the details in `__main__`:
+- Run `generate_examples.py` and changes the details in `__main__`:
 1. Change all details
 2. For now, only svg files are supported for logos. No support for .png and .jpg file. These are rasterized file types and should not be used.
 
 ## Suggested improvements
 
 - Accept images for logo (.png, .jpg)
-- Improve robustness (page breaks...)
 - Track and improve overall performance
-- Refactor the repository to have a better structure
-- Bundle everything to make deployment to serveless (AWS, Azure, GCP) easier : create from JSON
+- Return under the streamable format to serve to client ?
 - Multilanguage support ?
 
 ## Documentation for Invoice
@@ -40,7 +38,8 @@ After setting the attributes, `generate_pdf()` method can be called.
 
 Public methods:
 - `generate_pdf (name: str)` : `name` is the desired name for the output file. Name must not include file extension ".pdf".
-    The function will generate the pdf invoice from with information pvovided.
+    The function will generate the .pdf invoice from with information pvovided.
+- `generate_from_json (json_str: str)` : generate the .pdf invoice from the JSON string provided in `json_str`.
 
 Attributes: all attributes are public.
 - `company_name`: The name of the company.

@@ -5,7 +5,7 @@ from reportlab.graphics import renderPDF
 from reportlab.platypus import Table, TableStyle, Paragraph
 from reportlab.lib import colors
 from svglib.svglib import svg2rlg, SvgRenderer
-
+import rapidjson
 from lxml import etree
 
 
@@ -86,14 +86,14 @@ class Invoice:
         self.discount = 0
         self.payment_terms = []
 
-    def _generate_footer(self, c):
+    def _generate_footer(self, c: canvas.Canvas):
         c.resetTransforms()
         c.translate(MARGIN_LEFT, MARGIN_BOTTOM)
         c.setFillColorRGB(0.5,0.5,0.5)
         c.setFont("Helvetica",8)
         c.drawCentredString(0.5 * format[0] - MARGIN_LEFT, -0.5 * MARGIN_BOTTOM, f' {self.company_name} RCS {self.company_registration_number} - Numéro de TVA intracommunautaire {self.company_VAT_number}')
 
-    def _generate_header(self, c, current_page, total_pages):
+    def _generate_header(self, c: canvas.Canvas, current_page: int, total_pages: int):
         c.resetTransforms()
         c.setFillColorRGB(0.5,0.5,0.5)
         c.setFont("Helvetica",8)
@@ -101,7 +101,8 @@ class Invoice:
         c.drawString(0, 0, f"Page {current_page}/{total_pages}")
         c.drawRightString(format[0] - MARGIN_LEFT - MARGIN_RIGHT, 0 , f' {self.invoice_number}')
 
-    def _generate_details(self, c):
+    def _generate_details(self, c : canvas.Canvas):
+
         c.translate(MARGIN_LEFT, format[1] - MARGIN_TOP)
 
         svg_root = etree.fromstring(self.company_logo)
@@ -214,7 +215,7 @@ class Invoice:
             c.translate(invoice_details_offset, - VERTICAL_SPACING)
         c.translate(-format[0] + MARGIN_LEFT + MARGIN_RIGHT, 0)
 
-    def _generate_table(self,c, minimum_height=0):
+    def _generate_table(self, c: canvas.Canvas, minimum_height = 0):
         items_table_style = [
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ('BACKGROUND', (0, 0), (-1, 0), colors.Color(0.7,0.7,0.7)),
@@ -267,7 +268,11 @@ class Invoice:
         else :
             c.translate(0, - table._height)
 
-    def generate_pdf(self, name):
+    def generate_pdf(self, name : str):
+        """
+        Generates a PDF file with the invoice details.
+        name : The name of the PDF file without the ".pdf" extension.
+        """
         c = canvas.Canvas(f"{name}.pdf", pagesize=A4)
         c.setTitle(f"Facture_{self.invoice_number}")
         c.setAuthor(self.company_name)
@@ -320,3 +325,46 @@ class Invoice:
 
         self._generate_footer(c)
         c.save()
+
+
+    def generate_from_json(json_str : str):
+        """
+        Generates an Invoice object from a JSON string.
+        """
+        data = rapidjson.loads(json_str)
+        invoice = Invoice()
+        try:
+            invoice.company_name = data["company_name"]
+            invoice.company_logo = data["company_logo"]
+            invoice.company_VAT_number = data["company_VAT_number"]
+            invoice.company_registration_number = data["company_registration_number"]
+            invoice.company_email = data["company_email"]
+            invoice.company_address = data["company_address"]
+            invoice.company_zip_city = data["company_zip_city"]
+            invoice.company_phone = data["company_phone"]
+            invoice.company_email = data["company_email"]
+
+            invoice.customer_number = data.get("customer_number", "")
+            invoice.customer_name = data["customer_name"]
+            invoice.invoice_number = data["invoice_number"]
+            invoice.invoice_date = data["invoice_date"]
+            invoice.due_date = data["due_date"]
+
+            invoice.invoicing_address = data.get("invoicing_address", "")
+            invoice.invoicing_zip_city = data.get("invoicing_zip_city", "")
+            invoice.invoicing_phone = data.get("invoicing_phone", "")
+            invoice.invoicing_email = data.get("invoicing_email", "")
+
+            invoice.shipping_address = data.get("shipping_address", "")
+            invoice.shipping_zip_city = data.get("shipping_zip_city", "")
+            invoice.shipping_phone = data.get("shipping_phone", "")
+            invoice.shipping_email = data.get("shipping_email", "")
+            
+            invoice.items = data["items"]
+            invoice.VAT_rate = data["VAT_rate"]
+            invoice.discount = data["discount"]
+            invoice.payment_terms = data["payment_terms"]
+        except KeyError:
+            print("Error: JSON file does not contain all required fields.")
+        return invoice
+    
