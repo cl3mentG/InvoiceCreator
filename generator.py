@@ -24,14 +24,42 @@ HORIZONTAL_SPACING = 15*mm
 format = A4
 
 class Invoice:
-
     def __init__(self):
+        """
+        Initializes an instance of the InvoiceGenerator class.
+
+        Attributes:
+        - company_name: The name of the company.
+        - company_logo: The logo of the company.
+        - company_VAT_number: The VAT number of the company.
+        - company_registration_number: The registration number of the company.
+        - company_email: The email address of the company.
+        - company_address: The address of the company.
+        - company_zip_city: The ZIP code and city of the company.
+        - company_phone: The phone number of the company.
+        - customer_number: The customer number.
+        - customer_name: The name of the customer.
+        - invoice_number: The invoice number.
+        - invoice_date: The date of the invoice.
+        - due_date: The due date of the invoice.
+        - invoicing_address: The invoicing address.
+        - invoicing_zip_city: The ZIP code and city for invoicing.
+        - invoicing_phone: The phone number for invoicing.
+        - invoicing_email: The email address for invoicing.
+        - shipping_address: The shipping address.
+        - shipping_zip_city: The ZIP code and city for shipping.
+        - shipping_phone: The phone number for shipping.
+        - shipping_email: The email address for shipping.
+        - items: The list of items in the invoice.
+        - VAT_rate: The VAT rate for the invoice.
+        - discount: The discount for the invoice.
+        - payment_terms: The payment terms for the invoice.
+        """
         self.company_name = ""
         self.company_logo = ""
         self.company_VAT_number = ""
         self.company_registration_number = ""
         self.company_email = ""
-        self.company_website = ""
         self.company_address = ""
         self.company_zip_city = ""
         self.company_phone = ""
@@ -58,14 +86,14 @@ class Invoice:
         self.discount = 0
         self.payment_terms = []
 
-    def generate_footer(self, c):
+    def _generate_footer(self, c):
         c.resetTransforms()
         c.translate(MARGIN_LEFT, MARGIN_BOTTOM)
         c.setFillColorRGB(0.5,0.5,0.5)
         c.setFont("Helvetica",8)
         c.drawCentredString(0.5 * format[0] - MARGIN_LEFT, -0.5 * MARGIN_BOTTOM, f' {self.company_name} RCS {self.company_registration_number} - Numéro de TVA intracommunautaire {self.company_VAT_number}')
 
-    def generate_header(self, c, current_page, total_pages):
+    def _generate_header(self, c, current_page, total_pages):
         c.resetTransforms()
         c.setFillColorRGB(0.5,0.5,0.5)
         c.setFont("Helvetica",8)
@@ -73,7 +101,7 @@ class Invoice:
         c.drawString(0, 0, f"Page {current_page}/{total_pages}")
         c.drawRightString(format[0] - MARGIN_LEFT - MARGIN_RIGHT, 0 , f' {self.invoice_number}')
 
-    def generate_details(self, c):
+    def _generate_details(self, c):
         c.translate(MARGIN_LEFT, format[1] - MARGIN_TOP)
 
         svg_root = etree.fromstring(self.company_logo)
@@ -186,7 +214,7 @@ class Invoice:
             c.translate(invoice_details_offset, - VERTICAL_SPACING)
         c.translate(-format[0] + MARGIN_LEFT + MARGIN_RIGHT, 0)
 
-    def generate_table(self,c, minimum_height=0):
+    def _generate_table(self,c, minimum_height=0):
         items_table_style = [
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ('BACKGROUND', (0, 0), (-1, 0), colors.Color(0.7,0.7,0.7)),
@@ -217,8 +245,8 @@ class Invoice:
         for i, page_item in enumerate(page_items):
             if i > 0:
                 c.showPage()
-                self.generate_header(c, i+1, len(page_items) + add_last_page)
-                self.generate_footer(c)
+                self._generate_header(c, i+1, len(page_items) + add_last_page)
+                self._generate_footer(c)
                 c.resetTransforms()
                 c.translate(MARGIN_LEFT,format[1] - MARGIN_TOP)
             table = Table(page_item, colWidth)
@@ -227,13 +255,13 @@ class Invoice:
             table.drawOn(c, 0, -table._height)
 
             if (i == 0):
-                self.generate_header(c, i+1, len(page_items) + add_last_page)
-                self.generate_footer(c)
+                self._generate_header(c, i+1, len(page_items) + add_last_page)
+                self._generate_footer(c)
 
         if (add_last_page):
             c.showPage()
-            self.generate_header(c, len(page_items) + 1, len(page_items) + add_last_page)
-            self.generate_footer(c)
+            self._generate_header(c, len(page_items) + 1, len(page_items) + add_last_page)
+            self._generate_footer(c)
             c.resetTransforms()
             c.translate(MARGIN_LEFT, format[1] - MARGIN_TOP)
         else :
@@ -241,10 +269,10 @@ class Invoice:
 
     def generate_pdf(self, name):
         c = canvas.Canvas(f"{name}.pdf", pagesize=A4)
-        c.setTitle("Invoice")
+        c.setTitle(f"Facture_{self.invoice_number}")
         c.setAuthor(self.company_name)
 
-        self.generate_details(c)
+        self._generate_details(c)
 
         total_table_style = [
             ('FONTSIZE', (0, 0), (-1, -1), 12),
@@ -284,71 +312,11 @@ class Invoice:
         payment_terms_table.wrapOn(c, 0, 0)
         
         offset = max(payment_terms_table._height, total_table._height) + VERTICAL_SPACING
-        self.generate_table(c, minimum_height=offset)
+        self._generate_table(c, minimum_height=offset)
 
         # Draw recap tables
         payment_terms_table.drawOn(c, 0, -payment_terms_table._height)
         total_table.drawOn(c, format[0] - MARGIN_LEFT - MARGIN_RIGHT - total_table._width - 0.5 * HORIZONTAL_SPACING, - offset + VERTICAL_SPACING)
 
-        self.generate_footer(c)
+        self._generate_footer(c)
         c.save()
-
-    def set_company_name(self, name):
-        self.company_name = name
-    def set_company_logo(self, image):
-        self.company_logo = image
-    def set_company_VAT_number(self, number):
-        self.company_VAT_number = number
-    def set_company_registration_number(self, number):
-        self.company_registration_number = number
-    def set_company_email(self, email):
-        self.company_email = email
-    def set_company_website(self, website):
-        self.company_website = website
-    def set_company_address(self, address):
-        self.company_address = address
-    def set_company_zip_city(self, zip_city):
-        self.company_zip_city = zip_city
-    def set_company_phone(self, phone):
-        self.company_phone = phone
-    def set_company_email(self, email):
-        self.company_email = email
-    
-
-    def set_customer_number(self, number):
-        self.customer_number = number
-    def set_customer_name(self, name):
-        self.customer_name = name
-    def set_invoice_number(self, number):
-        self.invoice_number = number
-    def set_invoice_date(self, date):
-        self.invoice_date = date
-    def set_due_date(self, date):
-        self.due_date = date
-
-    def set_invoicing_address(self, address):
-        self.invoicing_address = address
-    def set_invoicing_zip_city(self, zip_city):
-        self.invoicing_zip_city = zip_city
-    def set_invoicing_phone(self, phone):
-        self.invoicing_phone = phone
-    def set_invoicing_email(self, email):
-        self.invoicing_email = email
-
-    def set_shipping_address(self, address):
-        self.shipping_address = address
-    def set_shipping_zip_city(self, zip_city):
-        self.shipping_zip_city = zip_city
-    def set_shipping_phone(self, phone):
-        self.shipping_phone = phone
-    def set_shipping_email(self, email):
-        self.shipping_email = email
-        
-    def set_items(self, items):
-        self.items = items
-    def set_VAT_rate(self, rate):
-        self.VAT_rate = rate
-    def set_discount(self, discount):
-        self.discount = discount
-    def set_payment_terms(self, terms):
-        self.payment_terms = terms
